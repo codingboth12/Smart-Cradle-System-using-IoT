@@ -1,80 +1,52 @@
 #include <Servo.h>
 
+#define temperaturePin A1 // Analog pin for TMP36 sensor
+#define microphonePin A0
+#define cryThreshold 500 // Threshold for detecting crying (adjust as needed)
+#define comfortThreshold 20 // Threshold for comfort temperature (adjust as needed)
 
-#define switchpin 0 // digital
-#define TempPin 0 // analog
-#define Buzzer 5 // digital
-#define MoistPin 1 // analog
-#define ServoPin 7 // digital
+Servo servo;
 
-
-Servo Servo1;
-int value; 
-double angle = 45; 
-int offtime=100; 
-float voltage =5.0;
-
-void setup() 
-{
-  Servo1.attach(ServoPin);
-  Servo1.write(angle);
-  pinMode(switchpin, INPUT); 
-  pinMode(TempPin,INPUT);		
-  pinMode(Buzzer, OUTPUT);		
-  pinMode(MoistPin,INPUT);		
+void setup() {
   Serial.begin(9600);
+  servo.attach(9);
 }
 
-void loop() 
-{
-  //Switch control
-  value = digitalRead(switchpin);
-  if(value == HIGH) {
-   
-    for(int angle=45; angle<90; angle++){ 
-    	Servo1.write(angle); 	
-    	delay(50); 				
-  	}
-  	for(int angle=90; angle>0; angle--){ 
-    	Servo1.write(angle);
-    	delay(50); 
-  	}
-  	for(int angle=0; angle<45; angle++){
-      	Servo1.write(angle);
-      	delay(50);
-  	}
-  	delay(offtime);
-  }
-  else {    
-    Servo1.write(45);   
-    delay(offtime);
-  }
-  
+void loop() {
+  // Read temperature from TMP36 sensor
+  int rawTemperature = analogRead(temperaturePin);
+  float voltage = rawTemperature * (5.0 / 1023.0);
+  float temperatureC = (voltage - 0.5) * 100; // Convert to Celsius
 
-  int sensorRead = analogRead(TempPin);
-  float voltageOut = sensorRead * (voltage / 1024.0);
-  float temp = (voltageOut - 0.5) * 100;
-  
-  if(temp < 36.8 || temp > 37.3){
-  	Serial.print("Not Normal temperature\n");
-    tone(Buzzer, 500);
+  // Read sound level from simulated microphone (potentiometer)
+  int soundLevel = analogRead(microphonePin);
+
+  // If sound level is above cry threshold, simulate crying
+  if (soundLevel > cryThreshold) {
+    Serial.println("Baby is crying!");
+    // Perform actions like sending notification or activating cradle rocking
+    // For simplicity, let's just rock the cradle
+    servo.write(90); // Assuming 90 degrees is the rocking position
+    delay(1000); // Rocking time
+    servo.write(0); // Return to initial position
+  } else {
+    // If sound level is below cry threshold, check temperature
+    if (temperatureC > comfortThreshold) {
+      Serial.println("Baby is not comfortable with the temperature. Adjust the temperature");
+      // Perform actions like adjusting temperature or displaying a message
+      // For simplicity, let's just print the temperature
+      Serial.print("Temperature: ");
+      Serial.print(temperatureC);
+      Serial.println(" °C");
+    } else {
+      Serial.println("Baby is not crying. Temperature is comfortable.");
+      // Perform actions like displaying a message or performing additional checks
+      // For simplicity, let's just print the temperature
+      Serial.print("Temperature: ");
+      Serial.print(temperatureC);
+      Serial.println(" °C");
+    }
   }
-  else{
-    Serial.print("Normal Temperature\n");
-    noTone(Buzzer);
-  }
-  
-  Serial.print("Temperature : ");
-  Serial.print(temp);
-  Serial.print("\n");
-  
- 
-  int Moisture=analogRead(MoistPin);
-  if(Moisture>0)
-    tone(Buzzer, 220);
-  else
-    noTone(Buzzer);
-  Serial.print("Moisture val : ");
-  Serial.print(Moisture);
-  Serial.print("\n");
+
+  delay(2000); // Delay between sensor readings
 }
